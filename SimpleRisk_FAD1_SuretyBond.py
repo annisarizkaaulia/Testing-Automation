@@ -43,32 +43,33 @@ def save_screenshot(driver, base_name="screenshot", test_name="login_test"):
 
 # ============Class PDF ============ #
 class CustomPDF(FPDF):
-    def footer(self):
-        self.set_y(-15)
-        self.set_font("Arial", size=8)
-        self.set_fill_color(0, 102, 204)  # Biru
-        self.set_text_color(0)
+   def footer(self):
+     self.set_y(-15)
+     self.set_font("Arial", size=8)
+     self.set_fill_color(0, 102, 204)  # Biru
+     self.set_text_color(0)
 
-        box_width = 20
-        box_height = 8
-        page_number_text = f"{self.page_no()}"
+     box_width = 8
+     box_height = 8
+     page_number_text = f"{self.page_no()}"
 
-        x_position = self.w - self.r_margin - box_width
-        y_position = self.get_y()
+     x_position = self.w - self.r_margin - box_width
+     y_position = self.get_y()
 
-        self.rect(x_position, y_position, box_width, box_height)
-        self.set_xy(x_position, y_position)
-        self.cell(box_width, box_height, page_number_text, align='C')
+     self.rect(x_position, y_position, box_width, box_height)
+     self.set_xy(x_position, y_position)
+     self.cell(box_width, box_height, page_number_text, align='C', fill=True)
 
 # ========== Generate PDF Report ========== #
 def generate_pdf_report(
     status,
     screenshot_paths,
-    test_name="login_test",
+    test_name="TC01_OutputFAD1_SuretyBond",
     testcase_id="TC01",
-    testcase_name="Login Test",
+    testcase_name="Ouptput FAD1 Surety Bond",
     actual_result="",
-    logo_path="logo askrindo.png"
+    logo_path="logo askrindo.png",
+    tester="chevin"
 ):
     folder = os.path.join("TC1", test_name)
     os.makedirs(folder, exist_ok=True)
@@ -99,8 +100,8 @@ def generate_pdf_report(
     for key, value in summary_data:
         pdf.set_fill_color(230, 230, 230)
         pdf.set_text_color(0, 0, 0)
-        pdf.cell(50, 10, str(key), border=1, fill=True)
-        pdf.cell(130, 10, str(value), border=1)
+        pdf.cell(40, 7, str(key), border=1, fill=True)
+        pdf.cell(115, 7, str(value), border=1)
         pdf.ln()
 
     pdf.ln(5)
@@ -120,13 +121,14 @@ def generate_pdf_report(
     "[Test Step 11]: Validasi Checkbox Dokumen Sesuai",
     "[Test Step 12]: Simpan",
     "[Test Step 13]: Cek data PDF",
-
-
-
 ]
 
-
+    steps_per_page = 2  # batas maksimal per halaman
     for i, step in enumerate(test_steps):
+        # Tambah halaman baru setiap 2 langkah (kecuali langkah pertama)
+        if i != 0 and i % steps_per_page == 0:
+            pdf.add_page()
+
         pdf.set_font("Arial", size=11)
         pdf.cell(0, 10, step, ln=True)
         pdf.ln(2)
@@ -171,22 +173,28 @@ def test_login_success(driver):
         # Tunggu halaman berhasil login
         wait.until(EC.presence_of_element_located((By.XPATH, "//h2[normalize-space()='SimpleRisk']")))
         screenshot_path2 = save_screenshot(driver, "login_berhasil", test_name)
+
         # Informasu Umum
         select_elem = wait.until(EC.presence_of_element_located((By.XPATH, "//select[@id='sumber_bisnis']")))
+        time.sleep(1)
         Select(select_elem).select_by_visible_text("Direct")
 
         select_elem = wait.until(EC.presence_of_element_located((By.XPATH, "//select[@id='cob']")))
+        time.sleep(1)
         Select(select_elem).select_by_visible_text("Surety Bond")
 
         select_elem = wait.until(EC.presence_of_element_located((By.XPATH, "//select[@id='currency']")))
+        time.sleep(1)
         Select(select_elem).select_by_visible_text("IDR")
 
         wait.until(EC.visibility_of_element_located((By.NAME, "nilaiPenjaminan"))).send_keys("230000000")
 
         select_elem = wait.until(EC.presence_of_element_located((By.XPATH, "//select[@id='jenis_permohonan']")))
+        time.sleep(1)
         Select(select_elem).select_by_visible_text("Permohonan Baru")
 
         select_elem = wait.until(EC.presence_of_element_located((By.XPATH, "//select[@id='jenis_penjaminan']")))
+        time.sleep(1)
         Select(select_elem).select_by_visible_text("Jaminan Penawaran")
 
         wait.until(EC.visibility_of_element_located((By.NAME, "tanggal_awal"))).send_keys("17/07/2025")
@@ -194,6 +202,7 @@ def test_login_success(driver):
         wait.until(EC.visibility_of_element_located((By.NAME, "tanggal_permohonan"))).send_keys("17/07/2025")
 
         select_elem = wait.until(EC.presence_of_element_located((By.XPATH, "//select[@id='sumber_anggaran']")))
+        time.sleep(1)
         Select(select_elem).select_by_visible_text("BUMN")
         wait.until(EC.visibility_of_element_located((By.NAME, "nomor_surat_permohonan"))).send_keys("NSP/ASK/09088")
         wait.until(EC.visibility_of_element_located((By.NAME, "tanggal_penerimaan_dokumen"))).send_keys("18/07/2025")
@@ -201,7 +210,7 @@ def test_login_success(driver):
 
         #Informasi Principal
         wait.until(EC.visibility_of_element_located((By.XPATH, "/html/body/app-root/vertical-layout/div/content/div/app-form/form/div[2]/div[2]/div/div[1]/div/div[2]/div/div/div/button"))).click()
-        wait = WebDriverWait(driver, 30)
+        wait = WebDriverWait(driver, 10)
         wait.until(EC.visibility_of_element_located((By.XPATH, "/html/body/ngb-modal-window/div/div/div[2]/form/div/div/div/div[2]/div/input"))).send_keys("Tunas Jaya")
         wait.until(EC.element_to_be_clickable(( By.XPATH, "/html/body/ngb-modal-window/div/div/div[2]/form/div/div/div/div[2]/div/div/button"))).click() 
         wait.until(lambda driver: len(driver.find_elements(By.XPATH, "//datatable-body-row")) > 0)
@@ -210,39 +219,52 @@ def test_login_success(driver):
         wait.until(EC.element_to_be_clickable((By.XPATH, "/html[1]/body[1]/ngb-modal-window[1]/div[1]/div[1]/div[2]/section[1]/ngx-datatable[1]/div[1]/datatable-body[1]/datatable-selection[1]/datatable-scroller[1]/datatable-row-wrapper[1]/datatable-body-row[1]/div[2]/datatable-body-cell[6]/div[1]/a[1]/*[name()='svg'][1]"))).click()
         select_elem = wait.until(EC.presence_of_element_located((By.XPATH, "//select[@id='provinsi']")))
         Select(select_elem).select_by_visible_text("Kepulauan Bangka Belitung")
+        time.sleep(1)
         select_elem = wait.until(EC.presence_of_element_located((By.XPATH, "//select[@id='kota']")))
+        time.sleep(1)
         Select(select_elem).select_by_visible_text("Kota Pangkal Pinang")
         wait.until(EC.visibility_of_element_located((By.NAME, "pic"))).send_keys("Annisa Rizka Aulia")
         wait.until(EC.visibility_of_element_located((By.NAME, "telp"))).send_keys("8785683445")
         select_elem = wait.until(EC.presence_of_element_located((By.XPATH, "//select[@id='nsa']")))
+        time.sleep(1)
         Select(select_elem).select_by_visible_text("Nasabah Baru")
         wait.until(EC.visibility_of_element_located((By.NAME, "pengalaman_kerja"))).send_keys("1")
         select_elem = wait.until(EC.presence_of_element_located((By.XPATH, "//select[@id='bentuk_principal']")))
+        time.sleep(1)
         Select(select_elem).select_by_visible_text("Non KSO")
         select_elem = wait.until(EC.presence_of_element_located((By.XPATH, "//select[@id='lk_1tahun_terakhir']")))
+        time.sleep(1)
         Select(select_elem).select_by_visible_text("Ya")
         screenshot_path5 = save_screenshot(driver, "Informasi Principal", test_name)
 
         #Informasi Proyek
         wait.until(EC.visibility_of_element_located((By.NAME, "nama_proyek"))).send_keys("Proyek Pembangunan Jembatan")
         select_elem = wait.until(EC.presence_of_element_located((By.XPATH, "//select[@id='jenis_proyek']")))
+        time.sleep(1)
         Select(select_elem).select_by_visible_text("Non Konstruksi")
         select_elem = wait.until(EC.presence_of_element_located((By.XPATH, "//select[@id='sektor_pekerjaan']")))
+        time.sleep(1)
         Select(select_elem).select_by_visible_text("Lainnya")
         wait.until(EC.visibility_of_element_located((By.NAME, "nilai_proyek"))).send_keys("100000000")
         wait.until(EC.visibility_of_element_located((By.NAME, "nilai_penjaminan"))).send_keys("100000000")
         wait.until(EC.visibility_of_element_located((By.NAME, "jkw_awal_proyek"))).send_keys("17/07/2025")
         wait.until(EC.visibility_of_element_located((By.NAME, "jkw_akhir_proyek"))).send_keys("30/07/2025")
         select_elem = wait.until(EC.presence_of_element_located((By.XPATH, "//select[@id='lokasi_proyek_provinsi']")))
+        time
         Select(select_elem).select_by_visible_text("Kepulauan Bangka Belitung")
         select_elem = wait.until(EC.presence_of_element_located((By.XPATH, "//select[@id='lokasi_proyek_kota']")))
+        time.sleep(1)
         Select(select_elem).select_by_visible_text("Kota Pangkal Pinang")
         wait.until(EC.visibility_of_element_located((By.NAME, "nama_obligee"))).send_keys("Arlina")
         select_elem = wait.until(EC.presence_of_element_located((By.XPATH, "//select[@id='bentuk_obligee']")))
+        time.sleep(1)
         Select(select_elem).select_by_visible_text("Pemerintahan")
         select_elem = wait.until(EC.presence_of_element_located((By.XPATH, "//select[@id='lokasi_obligee_provinsi']")))
+        time.sleep(1)   
         Select(select_elem).select_by_visible_text("Kepulauan Bangka Belitung")
+        time.sleep(1)   
         select_elem = wait.until(EC.presence_of_element_located((By.XPATH, "//select[@id='lokasi_obligee_kota']")))
+        time.sleep(1)   
         Select(select_elem).select_by_visible_text("Kota Pangkal Pinang")
         screenshot_path6 = save_screenshot(driver, "Informasi Proyek", test_name)
 
@@ -253,20 +275,26 @@ def test_login_success(driver):
 
         #Hasil Pengecekan
         select_elem = wait.until(EC.presence_of_element_located((By.XPATH, "//select[@id='nasabah_blacklist']")))
+        time
         Select(select_elem).select_by_visible_text("Tidak (Bukan Nasabah Blacklist)")
         select_elem = wait.until(EC.presence_of_element_located((By.XPATH, "//select[@id='ketentuan_collateral']")))
+        time.sleep(1)
         Select(select_elem).select_by_visible_text("Ya")   
         select_elem = wait.until(EC.presence_of_element_located((By.XPATH, "//select[@id='tarif_rate_premi_sesuai']")))
+        time.sleep(1)   
         Select(select_elem).select_by_visible_text("Ya")  
         wait.until(EC.visibility_of_element_located((By.NAME, "besaran_cash_collateral"))).send_keys("10")
         screenshot_path8 = save_screenshot(driver, "Hasil Pengecekan", test_name)
 
         #Disclaimer
         select_elem = wait.until(EC.presence_of_element_located((By.XPATH, "//select[@id='menggunakan_hukum_indonesia']")))
+        time.sleep(1)
         Select(select_elem).select_by_visible_text("Ya")  
         select_elem = wait.until(EC.presence_of_element_located((By.XPATH, "//select[@id='isi_wording_sesuai_sop']")))
+        time.sleep(1)
         Select(select_elem).select_by_visible_text("Ya")  
         select_elem = wait.until(EC.presence_of_element_located((By.XPATH, "//select[@id='spkmgr_sesuai_sop']")))
+        time.sleep(1)
         Select(select_elem).select_by_visible_text("Ya")  
         screenshot_path9 = save_screenshot(driver, "Disclaimer", test_name)
 
