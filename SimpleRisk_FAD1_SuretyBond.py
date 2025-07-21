@@ -42,31 +42,100 @@ def save_screenshot(driver, base_name="screenshot", test_name="login_test"):
     return path
 
 # ============Class PDF ============ #
+
 class CustomPDF(FPDF):
-   def footer(self):
-     self.set_y(-15)
-     self.set_font("Arial", size=8)
-     self.set_fill_color(0, 102, 204)  # Biru
-     self.set_text_color(0)
+    def header(self):
+        if self.page_no() > 1:
+            self.set_font("Arial", 'B', 10)
+            self.set_fill_color(255, 255, 255)
 
-     box_width = 8
-     box_height = 8
-     page_number_text = f"{self.page_no()}"
+            # Ukuran tabel
+            page_margin = 8
+            total_width = 210 - 2 * page_margin
+            logo_width = 50
+            right_width = 30
+            center_width = total_width - logo_width - right_width
+            cell_height = 8
+            top_y = self.get_y()
 
-     x_position = self.w - self.r_margin - box_width
-     y_position = self.get_y()
+            logo_x = page_margin
+            logo_y = top_y
+            logo_cell_width = logo_width
+            logo_cell_height = cell_height * 3  # tinggi kolom logo (3 baris)
 
-     self.rect(x_position, y_position, box_width, box_height)
-     self.set_xy(x_position, y_position)
-     self.cell(box_width, box_height, page_number_text, align='C', fill=True)
+            # ===== CELL KIRI (Logo) =====
+            self.set_xy(logo_x, logo_y)
+            self.cell(logo_cell_width, logo_cell_height, "", border=1)
 
-# ========== Generate PDF Report ========== #
+            # ====== TAMBAHKAN LOGO ======
+            logo_path = "logo askrindo.png"
+            if os.path.exists(logo_path):
+                # Ukuran asli gambar (ambil langsung)
+                from PIL import Image
+                img = Image.open(logo_path)
+                img_w, img_h = img.size
+                aspect_ratio = img_h / img_w
+
+                # Hitung ukuran gambar supaya muat & rata tengah
+                max_img_width = logo_cell_width - 6
+                max_img_height = logo_cell_height - 4
+                draw_w = max_img_width
+                draw_h = draw_w * aspect_ratio
+
+                if draw_h > max_img_height:
+                    draw_h = max_img_height
+                    draw_w = draw_h / aspect_ratio
+
+                img_x = logo_x + (logo_cell_width - draw_w) / 2
+                img_y = logo_y + (logo_cell_height - draw_h) / 2
+                self.image(logo_path, x=img_x, y=img_y, w=draw_w, h=draw_h)
+
+            # ===== TABEL TENGAH (3 baris) =====
+            self.set_font("Arial", '', 10)
+
+            self.set_x(logo_x + logo_cell_width)
+            self.cell(center_width, cell_height, "ASKRINDO", border=1, ln=2, align='C')
+
+            self.set_x(logo_x + logo_cell_width)
+            self.cell(center_width, cell_height, "DOKUMEN HASIL TESTING", border=1, ln=2, align='C')
+
+            self.set_x(logo_x + logo_cell_width)
+            self.cell(center_width, cell_height, "UPR Enhancement Portal Usulan RKAP", border=1, ln=0, align='C')
+
+            # ===== CELL KANAN (UAT) =====
+            self.set_xy(logo_x + logo_cell_width + center_width, logo_y)
+            self.set_font("Arial", '', 10)
+            self.cell(right_width, logo_cell_height, "UAT", border=1, align='C')
+
+            # Spasi ke bawah
+            self.ln(logo_cell_height + 8)
+
+        # Jangan tampilkan nomor halaman di halaman pertama
+    def footer(self):
+        if self.page_no() == 1:
+            return
+        self.set_y(-15)
+        self.set_font("Arial", size=8)
+        self.set_fill_color(0, 102, 204)
+        self.set_text_color(255, 255, 255)
+
+        box_width = 8
+        box_height = 8
+        page_number_text = f"{self.page_no() - 3}"  # agar halaman kedua jadi "1"
+
+        x_position = self.w - self.r_margin - box_width
+        y_position = self.get_y()
+
+        self.rect(x_position, y_position, box_width, box_height)
+        self.set_xy(x_position, y_position)
+        self.cell(box_width, box_height, page_number_text, align='C', fill=True)
+
 def generate_pdf_report(
     status,
     screenshot_paths,
     test_name="TC01_OutputFAD1_SuretyBond",
     testcase_id="TC01",
-    testcase_name="Ouptput FAD1 Surety Bond",
+    testcase_name="Output FAD1 Surety Bond",
     actual_result="",
     logo_path="logo askrindo.png",
     tester="chevin"
@@ -78,16 +147,20 @@ def generate_pdf_report(
 
     pdf = CustomPDF()
     pdf.set_auto_page_break(auto=True, margin=15)
+
+    # ===== Halaman 1: Judul =====
     pdf.add_page()
+    pdf.set_font("Arial", 'B', 22)
+    pdf.ln(60)
+    pdf.cell(0, 12, "Laporan Hasil Pengujian SIT", ln=True, align='L')
+    pdf.cell(0, 12, "Aplikasi Simple Risk SIT", ln=True, align='L')
+    pdf.cell(0, 12, "12/08/2025", ln=True, align='L')
+    pdf.cell(0, 12, "V.I.II", ln=True, align='L')
 
-    # ===== Header + Logo =====
-    if os.path.exists(logo_path):
-        pdf.image(logo_path, x=10, y=8, w=30)
-    pdf.set_font("Arial", size=16)
-    pdf.set_xy(45, 10)
-    pdf.ln(10)
+    # ===== Halaman 2: Header, Logo, Ringkasan =====
+    pdf.add_page()
+    pdf.set_font("Arial", size=10)
 
-    # ===== Summary Table =====
     summary_data = [
         ["TestCaseID", testcase_id],
         ["TestCaseName", testcase_name],
@@ -95,7 +168,6 @@ def generate_pdf_report(
         ["Status", status],
         ["Expected Result", "User berhasil masuk ke dashboard"],
     ]
-    pdf.set_font("Arial", size=10)
 
     for key, value in summary_data:
         pdf.set_fill_color(230, 230, 230)
@@ -108,24 +180,23 @@ def generate_pdf_report(
 
     # ===== Test Steps + Screenshots =====
     test_steps = [
-    "[Test Step 1]: Input username dan password yang benar",
-    "[Test Step 2]: Klik tombol login",
-    "[Test Step 3]: Input field pada Informasi Umum",
-    "[Test Step 4]: Input field pada Informasi Principal pada Pilih Debitur",
-    "[Test Step 5]: Lanjutkan Input field pada Informasi Principal",
-    "[Test Step 6]: Input field pada Informasi Proyek",
-    "[Test Step 7]: Input field pada Informasi Lainnya",
-    "[Test Step 8]: Input field pada Hasil Pengecekan",
-    "[Test Step 9]: Input field pada Disclaimer",
-    "[Test Step 10]: Input field pada Pengusul",
-    "[Test Step 11]: Validasi Checkbox Dokumen Sesuai",
-    "[Test Step 12]: Simpan",
-    "[Test Step 13]: Cek data PDF",
-]
+        "[Test Step 1]: Input username dan password yang benar",
+        "[Test Step 2]: Klik tombol login",
+        "[Test Step 3]: Input field pada Informasi Umum",
+        "[Test Step 4]: Input field pada Informasi Principal pada Pilih Debitur",
+        "[Test Step 5]: Lanjutkan Input field pada Informasi Principal",
+        "[Test Step 6]: Input field pada Informasi Proyek",
+        "[Test Step 7]: Input field pada Informasi Lainnya",
+        "[Test Step 8]: Input field pada Hasil Pengecekan",
+        "[Test Step 9]: Input field pada Disclaimer",
+        "[Test Step 10]: Input field pada Pengusul",
+        "[Test Step 11]: Validasi Checkbox Dokumen Sesuai",
+        "[Test Step 12]: Simpan",
+        "[Test Step 13]: Cek data PDF",
+    ]
 
-    steps_per_page = 2  # batas maksimal per halaman
+    steps_per_page = 2
     for i, step in enumerate(test_steps):
-        # Tambah halaman baru setiap 2 langkah (kecuali langkah pertama)
         if i != 0 and i % steps_per_page == 0:
             pdf.add_page()
 
@@ -137,16 +208,9 @@ def generate_pdf_report(
             pdf.image(screenshot_paths[i], x=10, w=190)
             pdf.ln(2)
 
-    # ===== Actual Result =====
-    pdf.set_font("Arial", style='', size=10)
-    pdf.set_text_color(0, 0, 0)
-    pdf.cell(23, 10, "Actual Result :", ln=False)
-    pdf.set_font("Arial", size=10)
-    pdf.cell(0, 10, actual_result, ln=True)
-    pdf.ln(2)
-
+    # Simpan PDF
     pdf.output(pdf_path)
-    print(f"Laporan PDF disimpan di: {pdf_path}")
+    print(f"PDF berhasil disimpan ke: {pdf_path}")
 
 # ========== Test Case: Login & Pilih Dropdown ========== #
 def test_login_success(driver):
@@ -174,17 +238,15 @@ def test_login_success(driver):
         wait.until(EC.presence_of_element_located((By.XPATH, "//h2[normalize-space()='SimpleRisk']")))
         screenshot_path2 = save_screenshot(driver, "login_berhasil", test_name)
 
+        
         # Informasu Umum
         select_elem = wait.until(EC.presence_of_element_located((By.XPATH, "//select[@id='sumber_bisnis']")))
-        time.sleep(1)
         Select(select_elem).select_by_visible_text("Direct")
 
         select_elem = wait.until(EC.presence_of_element_located((By.XPATH, "//select[@id='cob']")))
-        time.sleep(1)
         Select(select_elem).select_by_visible_text("Surety Bond")
 
         select_elem = wait.until(EC.presence_of_element_located((By.XPATH, "//select[@id='currency']")))
-        time.sleep(1)
         Select(select_elem).select_by_visible_text("IDR")
 
         wait.until(EC.visibility_of_element_located((By.NAME, "nilaiPenjaminan"))).send_keys("230000000")
@@ -202,7 +264,6 @@ def test_login_success(driver):
         wait.until(EC.visibility_of_element_located((By.NAME, "tanggal_permohonan"))).send_keys("17/07/2025")
 
         select_elem = wait.until(EC.presence_of_element_located((By.XPATH, "//select[@id='sumber_anggaran']")))
-        time.sleep(1)
         Select(select_elem).select_by_visible_text("BUMN")
         wait.until(EC.visibility_of_element_located((By.NAME, "nomor_surat_permohonan"))).send_keys("NSP/ASK/09088")
         wait.until(EC.visibility_of_element_located((By.NAME, "tanggal_penerimaan_dokumen"))).send_keys("18/07/2025")
@@ -219,52 +280,43 @@ def test_login_success(driver):
         wait.until(EC.element_to_be_clickable((By.XPATH, "/html[1]/body[1]/ngb-modal-window[1]/div[1]/div[1]/div[2]/section[1]/ngx-datatable[1]/div[1]/datatable-body[1]/datatable-selection[1]/datatable-scroller[1]/datatable-row-wrapper[1]/datatable-body-row[1]/div[2]/datatable-body-cell[6]/div[1]/a[1]/*[name()='svg'][1]"))).click()
         select_elem = wait.until(EC.presence_of_element_located((By.XPATH, "//select[@id='provinsi']")))
         Select(select_elem).select_by_visible_text("Kepulauan Bangka Belitung")
-        time.sleep(1)
         select_elem = wait.until(EC.presence_of_element_located((By.XPATH, "//select[@id='kota']")))
         time.sleep(1)
         Select(select_elem).select_by_visible_text("Kota Pangkal Pinang")
         wait.until(EC.visibility_of_element_located((By.NAME, "pic"))).send_keys("Annisa Rizka Aulia")
         wait.until(EC.visibility_of_element_located((By.NAME, "telp"))).send_keys("8785683445")
         select_elem = wait.until(EC.presence_of_element_located((By.XPATH, "//select[@id='nsa']")))
-        time.sleep(1)
         Select(select_elem).select_by_visible_text("Nasabah Baru")
         wait.until(EC.visibility_of_element_located((By.NAME, "pengalaman_kerja"))).send_keys("1")
         select_elem = wait.until(EC.presence_of_element_located((By.XPATH, "//select[@id='bentuk_principal']")))
-        time.sleep(1)
         Select(select_elem).select_by_visible_text("Non KSO")
         select_elem = wait.until(EC.presence_of_element_located((By.XPATH, "//select[@id='lk_1tahun_terakhir']")))
-        time.sleep(1)
         Select(select_elem).select_by_visible_text("Ya")
         screenshot_path5 = save_screenshot(driver, "Informasi Principal", test_name)
 
         #Informasi Proyek
         wait.until(EC.visibility_of_element_located((By.NAME, "nama_proyek"))).send_keys("Proyek Pembangunan Jembatan")
         select_elem = wait.until(EC.presence_of_element_located((By.XPATH, "//select[@id='jenis_proyek']")))
-        time.sleep(1)
         Select(select_elem).select_by_visible_text("Non Konstruksi")
         select_elem = wait.until(EC.presence_of_element_located((By.XPATH, "//select[@id='sektor_pekerjaan']")))
-        time.sleep(1)
         Select(select_elem).select_by_visible_text("Lainnya")
         wait.until(EC.visibility_of_element_located((By.NAME, "nilai_proyek"))).send_keys("100000000")
         wait.until(EC.visibility_of_element_located((By.NAME, "nilai_penjaminan"))).send_keys("100000000")
         wait.until(EC.visibility_of_element_located((By.NAME, "jkw_awal_proyek"))).send_keys("17/07/2025")
         wait.until(EC.visibility_of_element_located((By.NAME, "jkw_akhir_proyek"))).send_keys("30/07/2025")
         select_elem = wait.until(EC.presence_of_element_located((By.XPATH, "//select[@id='lokasi_proyek_provinsi']")))
-        time
+        time.sleep(1)
         Select(select_elem).select_by_visible_text("Kepulauan Bangka Belitung")
         select_elem = wait.until(EC.presence_of_element_located((By.XPATH, "//select[@id='lokasi_proyek_kota']")))
         time.sleep(1)
         Select(select_elem).select_by_visible_text("Kota Pangkal Pinang")
         wait.until(EC.visibility_of_element_located((By.NAME, "nama_obligee"))).send_keys("Arlina")
         select_elem = wait.until(EC.presence_of_element_located((By.XPATH, "//select[@id='bentuk_obligee']")))
-        time.sleep(1)
         Select(select_elem).select_by_visible_text("Pemerintahan")
         select_elem = wait.until(EC.presence_of_element_located((By.XPATH, "//select[@id='lokasi_obligee_provinsi']")))
-        time.sleep(1)   
         Select(select_elem).select_by_visible_text("Kepulauan Bangka Belitung")
         time.sleep(1)   
         select_elem = wait.until(EC.presence_of_element_located((By.XPATH, "//select[@id='lokasi_obligee_kota']")))
-        time.sleep(1)   
         Select(select_elem).select_by_visible_text("Kota Pangkal Pinang")
         screenshot_path6 = save_screenshot(driver, "Informasi Proyek", test_name)
 
