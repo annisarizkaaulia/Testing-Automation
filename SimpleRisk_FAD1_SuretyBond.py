@@ -31,7 +31,7 @@ def driver():
     driver.quit()
 
 # ========== Simpan Screenshot ========== #
-def save_screenshot(driver, base_name="screenshot", test_name="login_test"):
+def save_screenshot(driver, base_name="screenshot",test_name="FAD1 SuretyBond"):
     folder = os.path.join("TC1", test_name)
     os.makedirs(folder, exist_ok=True)
     waktu = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -121,7 +121,7 @@ class CustomPDF(FPDF):
 
         box_width = 8
         box_height = 8
-        page_number_text = f"{self.page_no() - 3}"  # agar halaman kedua jadi "1"
+        page_number_text = f"{self.page_no() -0}"  # agar halaman kedua jadi "1"
 
         x_position = self.w - self.r_margin - box_width
         y_position = self.get_y()
@@ -131,16 +131,18 @@ class CustomPDF(FPDF):
         self.cell(box_width, box_height, page_number_text, align='C', fill=True)
 
 def generate_pdf_report(
-    status,
-    screenshot_paths,
-    test_name="TC01_OutputFAD1_SuretyBond",
     testcase_id="TC01",
     testcase_name="Output FAD1 Surety Bond",
-    actual_result="",
+    actual_result=None,
     logo_path="logo askrindo.png",
-    tester="chevin"
+    tester="chevin",
+    expected_result="Sistem menampilkan FAD1 COB SuretyBond",
+    folder_pdf="Laporan Passed",
+    status=None,
+    screenshot_paths=None,
 ):
-    folder = os.path.join("TC1", test_name)
+    #-------Simpan Folder PDF-----------#
+    folder = os.path.join("TC1", folder_pdf)
     os.makedirs(folder, exist_ok=True)
     waktu = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     pdf_path = os.path.join(folder, f"report_{waktu}.pdf")
@@ -165,15 +167,16 @@ def generate_pdf_report(
         ["TestCaseID", testcase_id],
         ["TestCaseName", testcase_name],
         ["Date", datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")],
+        ["Tester", tester],
         ["Status", status],
-        ["Expected Result", "User berhasil masuk ke dashboard"],
+        ["Expected Result", expected_result],
     ]
 
     for key, value in summary_data:
         pdf.set_fill_color(230, 230, 230)
         pdf.set_text_color(0, 0, 0)
-        pdf.cell(40, 7, str(key), border=1, fill=True)
-        pdf.cell(115, 7, str(value), border=1)
+        pdf.cell(40, 6, str(key), border=1, fill=True)
+        pdf.cell(115, 6, str(value), border=1)
         pdf.ln()
 
     pdf.ln(5)
@@ -205,21 +208,22 @@ def generate_pdf_report(
         pdf.ln(2)
 
         if i < len(screenshot_paths) and os.path.exists(screenshot_paths[i]):
-            pdf.image(screenshot_paths[i], x=10, w=190)
+            pdf.image(screenshot_paths[i], x=5, w=150)
             pdf.ln(2)
+        
 
     # Simpan PDF
+    pdf.set_font("Arial", '', 11)
+    pdf.cell(0, 10, f"Actual Result: {actual_result}", ln=True)
+    
     pdf.output(pdf_path)
     print(f"PDF berhasil disimpan ke: {pdf_path}")
 
-# ========== Test Case: Login & Pilih Dropdown ========== #
+# ========== Test Case01 ========== #
 def test_login_success(driver):
     username = "1939"
     password = "@Askrindo123"
     target_url = "http://10.100.20.53:8084/"
-    test_name = "Menampilkan Report FAD sesuai dengan analisa"
-    testcase_id = "TC01"
-    testcase_name = "Login Test"
 
     driver.get(target_url)
     wait = WebDriverWait(driver, 20)
@@ -230,13 +234,13 @@ def test_login_success(driver):
         wait.until(EC.visibility_of_element_located((By.XPATH, "//input[@id='login-email']"))).send_keys(username)
         wait.until(EC.visibility_of_element_located((By.XPATH, "//input[@placeholder='Masukan Password']"))).send_keys(password)
 
-        screenshot_path1 = save_screenshot(driver, "sebelum_login", test_name)
+        screenshot_path1 = save_screenshot(driver, "sebelum_login")
 
         wait.until(EC.element_to_be_clickable((By.XPATH, "//button[normalize-space()='Sign in']"))).click()
 
         # Tunggu halaman berhasil login
         wait.until(EC.presence_of_element_located((By.XPATH, "//h2[normalize-space()='SimpleRisk']")))
-        screenshot_path2 = save_screenshot(driver, "login_berhasil", test_name)
+        screenshot_path2 = save_screenshot(driver, "login_berhasil")
 
         
         # Informasu Umum
@@ -255,6 +259,7 @@ def test_login_success(driver):
         Select(select_elem).select_by_visible_text("Permohonan Baru")
 
         select_elem = wait.until(EC.presence_of_element_located((By.XPATH, "//select[@id='jenis_penjaminan']")))
+        time.sleep(1)
         Select(select_elem).select_by_visible_text("Jaminan Penawaran")
 
         wait.until(EC.visibility_of_element_located((By.NAME, "tanggal_awal"))).send_keys("17/07/2025")
@@ -265,7 +270,7 @@ def test_login_success(driver):
         Select(select_elem).select_by_visible_text("BUMN")
         wait.until(EC.visibility_of_element_located((By.NAME, "nomor_surat_permohonan"))).send_keys("NSP/ASK/09088")
         wait.until(EC.visibility_of_element_located((By.NAME, "tanggal_penerimaan_dokumen"))).send_keys("18/07/2025")
-        screenshot_path3 = save_screenshot(driver, "Informasi Umum", test_name)
+        screenshot_path3 = save_screenshot(driver, "Informasi Umum")
 
         #Informasi Principal
         wait.until(EC.visibility_of_element_located((By.XPATH, "/html/body/app-root/vertical-layout/div/content/div/app-form/form/div[2]/div[2]/div/div[1]/div/div[2]/div/div/div/button"))).click()
@@ -273,7 +278,7 @@ def test_login_success(driver):
         wait.until(EC.visibility_of_element_located((By.XPATH, "/html/body/ngb-modal-window/div/div/div[2]/form/div/div/div/div[2]/div/input"))).send_keys("Tunas Jaya")
         wait.until(EC.element_to_be_clickable(( By.XPATH, "/html/body/ngb-modal-window/div/div/div[2]/form/div/div/div/div[2]/div/div/button"))).click() 
         wait.until(lambda driver: len(driver.find_elements(By.XPATH, "//datatable-body-row")) > 0)
-        screenshot_path4 = save_screenshot(driver, "Pilih Debitur", test_name)
+        screenshot_path4 = save_screenshot(driver, "Pilih Debitur")
 
         wait.until(EC.element_to_be_clickable((By.XPATH, "/html[1]/body[1]/ngb-modal-window[1]/div[1]/div[1]/div[2]/section[1]/ngx-datatable[1]/div[1]/datatable-body[1]/datatable-selection[1]/datatable-scroller[1]/datatable-row-wrapper[1]/datatable-body-row[1]/div[2]/datatable-body-cell[6]/div[1]/a[1]/*[name()='svg'][1]"))).click()
         select_elem = wait.until(EC.presence_of_element_located((By.XPATH, "//select[@id='provinsi']")))
@@ -290,7 +295,7 @@ def test_login_success(driver):
         Select(select_elem).select_by_visible_text("Non KSO")
         select_elem = wait.until(EC.presence_of_element_located((By.XPATH, "//select[@id='lk_1tahun_terakhir']")))
         Select(select_elem).select_by_visible_text("Ya")
-        screenshot_path5 = save_screenshot(driver, "Informasi Principal", test_name)
+        screenshot_path5 = save_screenshot(driver, "Informasi Principal")
 
         #Informasi Proyek
         wait.until(EC.visibility_of_element_located((By.NAME, "nama_proyek"))).send_keys("Proyek Pembangunan Jembatan")
@@ -316,12 +321,12 @@ def test_login_success(driver):
         time.sleep(1)   
         select_elem = wait.until(EC.presence_of_element_located((By.XPATH, "//select[@id='lokasi_obligee_kota']")))
         Select(select_elem).select_by_visible_text("Kota Pangkal Pinang")
-        screenshot_path6 = save_screenshot(driver, "Informasi Proyek", test_name)
+        screenshot_path6 = save_screenshot(driver, "Informasi Proyek")
 
         #Informasi Lainnya
         wait.until(EC.visibility_of_element_located((By.NAME, "nomor_underlying"))).send_keys("NU/ASK/190807")
         wait.until(EC.visibility_of_element_located((By.NAME, "tanggal_underlying"))).send_keys("NU/ASK/190807")
-        screenshot_path7 = save_screenshot(driver, "Informasi Lainnya", test_name)
+        screenshot_path7 = save_screenshot(driver, "Informasi Lainnya")
 
         #Hasil Pengecekan
         select_elem = wait.until(EC.presence_of_element_located((By.XPATH, "//select[@id='nasabah_blacklist']")))
@@ -334,7 +339,7 @@ def test_login_success(driver):
         time.sleep(1)   
         Select(select_elem).select_by_visible_text("Ya")  
         wait.until(EC.visibility_of_element_located((By.NAME, "besaran_cash_collateral"))).send_keys("10")
-        screenshot_path8 = save_screenshot(driver, "Hasil Pengecekan", test_name)
+        screenshot_path8 = save_screenshot(driver, "Hasil Pengecekan")
 
         #Disclaimer
         select_elem = wait.until(EC.presence_of_element_located((By.XPATH, "//select[@id='menggunakan_hukum_indonesia']")))
@@ -346,52 +351,46 @@ def test_login_success(driver):
         select_elem = wait.until(EC.presence_of_element_located((By.XPATH, "//select[@id='spkmgr_sesuai_sop']")))
         time.sleep(1)
         Select(select_elem).select_by_visible_text("Ya")  
-        screenshot_path9 = save_screenshot(driver, "Disclaimer", test_name)
+        screenshot_path9 = save_screenshot(driver, "Disclaimer")
 
         #Pengusul
         wait.until(EC.visibility_of_element_located((By.NAME, "nama_admin_polis"))).send_keys("Chevin Rifan P")
         wait.until(EC.visibility_of_element_located((By.NAME, "nama_pemutus"))).send_keys("Cynthia")
         wait.until(EC.visibility_of_element_located((By.NAME, "nama_fungsional_pemasaran"))).send_keys("Abdurrahman")
-        screenshot_path8 = save_screenshot(driver, "Informasi Lainnya", test_name)
+        screenshot_path8 = save_screenshot(driver, "Informasi Lainnya")
         wait.until(EC.visibility_of_element_located((By.XPATH, "//button[normalize-space()='Preview']"))).click()
-        screenshot_path10 = save_screenshot(driver, "Pengusul", test_name)
+        screenshot_path10 = save_screenshot(driver, "Pengusul")
 
         #Checkbox Validasi Dokumen Sesuai
         checkbox = WebDriverWait(driver, 20).until(
         EC.element_to_be_clickable((By.XPATH, "//input[@id='validasi_dokumen_sesuai']")))
 
         if not checkbox.is_selected():checkbox.click()
-        screenshot_path11 = save_screenshot(driver, "Validasi Dokumen", test_name)
+        screenshot_path11 = save_screenshot(driver, "Validasi Dokumen")
 
         # Klik tombol Accept dan Simpan
         wait.until(EC.visibility_of_element_located((By.XPATH, "//button[normalize-space()='Accept']"))).click()
         wait.until(EC.visibility_of_element_located((By.XPATH, "//button[normalize-space()='Simpan']"))).click()
-        screenshot_path12 = save_screenshot(driver, "Simpan", test_name)
+        screenshot_path12 = save_screenshot(driver, "Simpan")
         wait.until(EC.visibility_of_element_located((By.XPATH, "//button[normalize-space()='Ya']"))).click()
         time.sleep(2)
         #pindah ke tab baru untuk melihat laporan
         driver.switch_to.window(driver.window_handles[1])
-        screenshot_path13 = save_screenshot(driver, "Report Selesai", test_name)
+        screenshot_path13 = save_screenshot(driver, "Report Selesai")
 
         # Generate report berhasil
         generate_pdf_report(
             status="Passed",
             screenshot_paths=[screenshot_path1, screenshot_path2,screenshot_path3,screenshot_path4, screenshot_path5, screenshot_path6, screenshot_path7,screenshot_path8, screenshot_path9, screenshot_path10, screenshot_path11, screenshot_path12, screenshot_path13],
-            test_name=test_name,
-            testcase_id=testcase_id,
-            testcase_name=testcase_name,
             actual_result="Berhasil Input dan Generate PDF SimpleRisk"
         )
         assert True
 
     except Exception as e:
-        screenshot_path_fail = save_screenshot(driver, "login_gagal", test_name)
+        screenshot_path_fail = save_screenshot(driver, "login_gagal")
         generate_pdf_report(
             status="Not Passed",
             screenshot_paths=[screenshot_path_fail],
-            test_name=test_name,
-            testcase_id=testcase_id,
-            testcase_name=testcase_name,
             actual_result="Gagal Input " + str(e)
         )
         assert False, str(e)
