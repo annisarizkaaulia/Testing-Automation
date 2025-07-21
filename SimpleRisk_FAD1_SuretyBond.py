@@ -252,11 +252,9 @@ def test_login_success(driver):
         wait.until(EC.visibility_of_element_located((By.NAME, "nilaiPenjaminan"))).send_keys("230000000")
 
         select_elem = wait.until(EC.presence_of_element_located((By.XPATH, "//select[@id='jenis_permohonan']")))
-        time.sleep(1)
         Select(select_elem).select_by_visible_text("Permohonan Baru")
 
         select_elem = wait.until(EC.presence_of_element_located((By.XPATH, "//select[@id='jenis_penjaminan']")))
-        time.sleep(1)
         Select(select_elem).select_by_visible_text("Jaminan Penawaran")
 
         wait.until(EC.visibility_of_element_located((By.NAME, "tanggal_awal"))).send_keys("17/07/2025")
