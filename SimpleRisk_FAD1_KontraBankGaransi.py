@@ -41,6 +41,24 @@ def save_screenshot(driver, base_name="screenshot", test_name="login_test"):
     print(f"Screenshot disimpan di: {path}")
     return path
 
+# ============Class PDF ============ #
+class CustomPDF(FPDF):
+    def footer(self):
+     self.set_y(-15)
+     self.set_font("Arial", size=8)
+     self.set_fill_color(0, 102, 204)  # Biru
+     self.set_text_color(0)
+
+     box_width = 20
+     box_height = 8
+     page_number_text = f"{self.page_no()}"
+
+     x_position = self.w - self.r_margin - box_width
+     y_position = self.get_y()
+
+     self.rect(x_position, y_position, box_width, box_height)
+     self.set_xy(x_position, y_position)
+     self.cell(box_width, box_height, page_number_text, align='C', fill=True)
 # ========== Generate PDF Report ========== #
 def generate_pdf_report(
     status,
@@ -56,7 +74,7 @@ def generate_pdf_report(
     waktu = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     pdf_path = os.path.join(folder, f"report_{waktu}.pdf")
 
-    pdf = FPDF()
+    pdf = CustomPDF()
     pdf.set_auto_page_break(auto=True, margin=15)
     pdf.add_page()
 
@@ -157,7 +175,7 @@ def test_login_success(driver):
         Select(select_elem).select_by_visible_text("Direct")
 
         select_elem = wait.until(EC.presence_of_element_located((By.XPATH, "//select[@id='cob']")))
-        Select(select_elem).select_by_visible_text("Surety Bond")
+        Select(select_elem).select_by_visible_text("Kontra Bank Garansi")
 
         select_elem = wait.until(EC.presence_of_element_located((By.XPATH, "//select[@id='currency']")))
         Select(select_elem).select_by_visible_text("IDR")
@@ -269,15 +287,17 @@ def test_login_success(driver):
         # Klik tombol Accept dan Simpan
         wait.until(EC.visibility_of_element_located((By.XPATH, "//button[normalize-space()='Accept']"))).click()
         wait.until(EC.visibility_of_element_located((By.XPATH, "//button[normalize-space()='Simpan']"))).click()
-        wait.until(EC.visibility_of_element_located((By.XPATH, "//button[normalize-space()='Ya']"))).click()
-        
         screenshot_path12 = save_screenshot(driver, "Simpan", test_name)
-
+        wait.until(EC.visibility_of_element_located((By.XPATH, "//button[normalize-space()='Ya']"))).click()
+        time.sleep(2)
+        #pindah ke tab baru untuk melihat laporan
+        driver.switch_to.window(driver.window_handles[1])
+        screenshot_path13 = save_screenshot(driver, "Report Selesai", test_name)
 
         # Generate report berhasil
         generate_pdf_report(
             status="Passed",
-            screenshot_paths=[screenshot_path1, screenshot_path2,screenshot_path3,screenshot_path4, screenshot_path5, screenshot_path6, screenshot_path7,screenshot_path8, screenshot_path9, screenshot_path10, screenshot_path11, screenshot_path12],
+            screenshot_paths=[screenshot_path1, screenshot_path2,screenshot_path3,screenshot_path4, screenshot_path5, screenshot_path6, screenshot_path7,screenshot_path8, screenshot_path9, screenshot_path10, screenshot_path11, screenshot_path12, screenshot_path13],
             test_name=test_name,
             testcase_id=testcase_id,
             testcase_name=testcase_name,
