@@ -50,12 +50,12 @@ class CustomPDF(FPDF):
             self.set_fill_color(255, 255, 255)
 
             # Ukuran tabel
-            page_margin = 8
+            page_margin = 20
             total_width = 210 - 2 * page_margin
             logo_width = 50
             right_width = 30
             center_width = total_width - logo_width - right_width
-            cell_height = 8
+            cell_height = 7
             top_y = self.get_y()
 
             logo_x = page_margin
@@ -152,15 +152,26 @@ def generate_pdf_report(
 
     # ===== Halaman 1: Judul =====
     pdf.add_page()
-    pdf.set_font("Arial", 'B', 22)
-    pdf.ln(60)
+
+    if os.path.exists(logo_path):
+         pdf.image(logo_path, x=20, y=16, w=45)  # Rata kiri
+    else:
+         print("Logo tidak ditemukan")
+  
+    pdf.set_font("Arial", 'B', 25)
+    pdf.set_xy(20,60)
     pdf.cell(0, 12, "Laporan Hasil Pengujian SIT", ln=True, align='L')
-    pdf.cell(0, 12, "Aplikasi Simple Risk SIT", ln=True, align='L')
+    pdf.set_x(20)
+    pdf.cell(0, 12, "Aplikasi Simple Risk", ln=True, align='L')
+    pdf.set_x(20)
     pdf.cell(0, 12, "12/08/2025", ln=True, align='L')
+    pdf.set_x(20)
     pdf.cell(0, 12, "V.I.II", ln=True, align='L')
+    
 
     # ===== Halaman 2: Header, Logo, Ringkasan =====
     pdf.add_page()
+    pdf.set_y(40)
     pdf.set_font("Arial", size=10)
 
     summary_data = [
@@ -173,6 +184,7 @@ def generate_pdf_report(
     ]
 
     for key, value in summary_data:
+        pdf.set_x(20)
         pdf.set_fill_color(230, 230, 230)
         pdf.set_text_color(0, 0, 0)
         pdf.cell(40, 6, str(key), border=1, fill=True)
@@ -199,21 +211,26 @@ def generate_pdf_report(
     ]
 
     steps_per_page = 2
+    y_start = 35  # Y awal supaya tidak terlalu jauh dari header
     for i, step in enumerate(test_steps):
         if i != 0 and i % steps_per_page == 0:
             pdf.add_page()
+            pdf.set_y(y_start)  # Mulai dari bawah header lagi
 
+        pdf.set_x(20)
         pdf.set_font("Arial", size=11)
-        pdf.cell(0, 10, step, ln=True)
+        pdf.cell(20, 10, step, ln=True)
         pdf.ln(2)
 
         if i < len(screenshot_paths) and os.path.exists(screenshot_paths[i]):
-            pdf.image(screenshot_paths[i], x=5, w=150)
+            pdf.set_x(20)
+            pdf.image(screenshot_paths[i], x=20, w=150)
             pdf.ln(2)
         
 
     # Simpan PDF
     pdf.set_font("Arial", '', 11)
+    pdf.set_x(20)
     pdf.cell(0, 10, f"Actual Result: {actual_result}", ln=True)
     
     pdf.output(pdf_path)
